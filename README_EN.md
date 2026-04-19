@@ -13,16 +13,6 @@
 
 Screen2Slides extracts slide-like pages from screen recordings, meeting recordings, or lecture videos by analyzing a user-selected rectangular region, then exports the result as a PDF.
 
-## Features
-
-- Three launch modes: local, upload, and hybrid
-- Region-of-interest selection on a preview frame
-- Three similarity algorithms: `ssim`, `histogram`, and `ahash`
-- `cpu / gpu / auto` execution device options
-- Thumbnail review with manual delete and restore before PDF export
-- Outputs `slides/*.jpg`, `slides.pdf`, and `manifest.json`
-- Adds timestamp-based bookmarks to the generated PDF
-
 ## Workflow
 
 1. Start the app and open it in a browser.
@@ -56,6 +46,16 @@ Export the resulting PDF:
 Reference full PDF provided by the lab for result verification:
 
 - https://alignmentsurvey.com/uploads/pair_lab/talks/post_train.pdf
+
+## Features
+
+- Three launch modes: local, upload, and hybrid
+- Region-of-interest selection on a preview frame
+- Three similarity algorithms: `ssim`, `histogram`, and `ahash`
+- `cpu / gpu / auto` execution device options
+- Thumbnail review with manual delete and restore before PDF export
+- Outputs `slides/*.jpg`, `slides.pdf`, and `manifest.json`
+- Adds timestamp-based bookmarks to the generated PDF
 
 ## Suggested Settings
 

@@ -13,16 +13,6 @@
 
 Screen2Slides 用于从会议录屏、课程录屏或屏幕录制视频中，针对指定矩形区域自动抽取 PPT 页面，并导出为 PDF。
 
-## 功能概览
-
-- 支持本地视频选择、服务器上传、兼容模式三种启动方式
-- 支持在预览帧上框选需要保留到 PDF 的矩形区域
-- 支持 `ssim`、`histogram`、`ahash` 三种相似度算法
-- 支持 `cpu / gpu / auto` 执行设备选择
-- 支持抽取结果缩略图预览，并手工删除或恢复页面后再导出 PDF
-- 生成 `slides/*.jpg`、`slides.pdf`、`manifest.json`
-- 生成的 PDF 会按页面时间戳写入书签
-
 ## 使用流程
 
 1. 启动应用并打开页面。
@@ -56,6 +46,16 @@ Screen2Slides 用于从会议录屏、课程录屏或屏幕录制视频中，针
 实验室提供的完整版 PDF，用于结果对照验证:
 
 - https://alignmentsurvey.com/uploads/pair_lab/talks/post_train.pdf
+
+## 功能概览
+
+- 支持本地视频选择、服务器上传、兼容模式三种启动方式
+- 支持在预览帧上框选需要保留到 PDF 的矩形区域
+- 支持 `ssim`、`histogram`、`ahash` 三种相似度算法
+- 支持 `cpu / gpu / auto` 执行设备选择
+- 支持抽取结果缩略图预览，并手工删除或恢复页面后再导出 PDF
+- 生成 `slides/*.jpg`、`slides.pdf`、`manifest.json`
+- 生成的 PDF 会按页面时间戳写入书签
 
 ## 参数建议
 
