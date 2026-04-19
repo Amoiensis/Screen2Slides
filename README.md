@@ -1,7 +1,13 @@
-<div style="display:flex; align-items:center; gap:12px;">
-  <img src="assets/amoiensis_samll.png" alt="Screen2Slides Logo" height="44">
-  <h1 style="margin:0;">Screen2Slides</h1>
-</div>
+<table>
+  <tr>
+    <td width="72" valign="middle">
+      <img src="assets/amoiensis_samll.png" alt="Screen2Slides Logo" width="56">
+    </td>
+    <td valign="middle">
+      <h1>Screen2Slides</h1>
+    </td>
+  </tr>
+</table>
 
 [中文说明](README.md) | [English](README_EN.md)
 
