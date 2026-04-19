@@ -196,6 +196,20 @@ Each run creates a result directory named with the video name plus a random suff
 - `slides.pdf`: generated PDF
 - `manifest.json`: timestamps and page metadata
 
+## Online Demo and Data Safety
+
+You can try the project online first:
+
+- <http://www.peking.ren/screen2slides/>
+
+Notes:
+
+- The public demo is intended for quick evaluation and light testing
+- Upload and processing size limits are enforced because online resources are limited
+- For further discussion, feedback, or access to more stable and better-provisioned online resources, you can join the QQ group: `1097740457`
+
+Meeting recordings, lecture videos, and screen captures often involve copyright, privacy, or internal materials. The project also supports self-hosted local deployment, so videos, extracted frames, and generated PDFs can be processed entirely on your own machine without sending data to a third-party service.
+
 ## License
 
 This project uses `PolyForm Noncommercial 1.0.0`.
