@@ -208,6 +208,8 @@ Notes:
 - Upload and processing size limits are enforced because online resources are limited
 - For further discussion, feedback, or access to more stable and better-provisioned online resources, you can join the QQ group: `1097740457`
 
+<img src="./docs/comunity/QQ_Gorup_1097740457.JPG" alt="QQ Group 1097740457" width="260">
+
 Meeting recordings, lecture videos, and screen captures often involve copyright, privacy, or internal materials. The project also supports self-hosted local deployment, so videos, extracted frames, and generated PDFs can be processed entirely on your own machine without sending data to a third-party service.
 
 ## License
