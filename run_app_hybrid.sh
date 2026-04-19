@@ -7,4 +7,4 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
   --server.address 0.0.0.0 \
   --server.port 9555 \
   -- \
-  --app-mode local
+  --app-mode hybrid

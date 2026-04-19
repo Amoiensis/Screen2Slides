@@ -3,6 +3,6 @@ opencv-python
 scikit-image
 numpy
 Pillow
+pypdf
 plotly
 pandas
-

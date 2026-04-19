@@ -64,7 +64,7 @@ class VideoMetadata:
 @dataclass(frozen=True)
 class ExtractConfig:
     mode: str = "ssim"
-    execution_device: str = "auto"
+    execution_device: str = "cpu"
     sample_every_seconds: float = DEFAULT_SAMPLE_SECONDS
     similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD
     min_stable_seconds: float = DEFAULT_MIN_STABLE_SECONDS

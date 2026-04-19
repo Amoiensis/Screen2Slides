@@ -4,5 +4,3 @@ outputs/
 uploads/
 *.mp4
 codex_log.txt
-# Extraction result directories (video_name + random suffix pattern)
-record_*_*/

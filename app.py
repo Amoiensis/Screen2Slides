@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import argparse
 import base64
 from pathlib import Path
+import sys
 
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
+from PIL import Image as PILImage
 
+from screen_to_slides import __version__
 from screen_to_slides.extractor import (
     DEFAULT_MIN_STABLE_SECONDS,
     DEFAULT_SAMPLE_SECONDS,
@@ -27,6 +31,14 @@ ROOT = Path(__file__).resolve().parent
 OUTPUTS_DIR = ROOT / "outputs"
 UPLOADS_DIR = ROOT / "uploads"
 EXAMPLE_VIDEO = ROOT / "record_2025_11_25_16_29_27_89_prat.mp4"
+GITHUB_URL = "https://github.com/Amoiensis/Screen2Slides"
+APP_ICON_PATH = ROOT / "assets" / "amoiensis_samll.png"
+APP_ICON = PILImage.open(APP_ICON_PATH) if APP_ICON_PATH.exists() else "pages"
+APP_ICON_B64 = (
+    base64.b64encode(APP_ICON_PATH.read_bytes()).decode("ascii")
+    if APP_ICON_PATH.exists()
+    else ""
+)
 VIDEO_EXTENSIONS = {
     ".mp4",
     ".mov",
@@ -41,25 +53,32 @@ VIDEO_EXTENSIONS = {
     ".ts",
     ".m2ts",
 }
+APP_SOURCE_MODES = {"local", "upload", "hybrid"}
 
 
 TEXT = {
     "zh": {
         "app.title": "Screen To Slides",
         "app.subtitle": "上传录屏、框选 PPT 区域，然后直接抽取并导出 PDF。",
-        "lang.label": "Language",
+        "lang.label": "语言选择 / Language",
         "lang.zh": "中文",
         "lang.en": "English",
-        "source.section": "1. 视频上传",
+        "app.footer_meta": "版本 {version} · GitHub: {url}",
+        "app.footer_license": "许可: PolyForm Noncommercial 1.0.0；商业使用请联系授权。",
+        "source.section": "1. 视频选择",
         "source.label": "选择视频来源",
-        "source.example": "选择本地视频",
-        "source.upload": "上传新视频",
+        "source.local": "本地视频",
+        "source.upload": "服务器上传",
+        "source.hybrid": "兼容模式",
         "source.uploader": "上传视频文件",
         "source.dir": "扫描目录或视频文件路径",
         "source.file": "选择视频文件",
+        "source.file_placeholder": "请选择一个视频文件",
         "source.missing": "视频不存在: {path}",
         "source.no_files": "该目录下没有找到可处理的视频文件。",
         "source.empty": "上传视频文件，或从本地目录中选择一个视频文件。",
+        "source.mode_caption": "当前启动模式: {mode}",
+        "source.pending": "尚未选择视频",
         "overview.section": "2. 视频概览",
         "overview.duration": "视频时长",
         "overview.path": "当前视频",
@@ -70,6 +89,7 @@ TEXT = {
         "preview.invalid": "时间格式无效，请输入 `HH:MM:SS` 或总秒数。",
         "selector.section": "3. 选择区块",
         "selector.caption": "在图上拖拽矩形，选出需要纳入 PDF 的 PPT 区域。",
+        "selector.empty": "上传或选择视频后，这里会显示可框选的预览画面。",
         "roi.left": "左边界",
         "roi.top": "上边界",
         "roi.width": "宽度",
@@ -87,7 +107,7 @@ TEXT = {
         "advanced.mode": "相似度算法",
         "advanced.mode_help": "`ssim` 更稳定；`histogram` 更轻量；`ahash` 更快但更粗糙。",
         "advanced.device": "执行设备",
-        "advanced.device_help": "`auto` 会优先尝试 CUDA，没有可用 GPU 时自动回退到 CPU。",
+        "advanced.device_help": "默认直接使用 CPU；如需更快处理，可手动切换到 GPU 增强或 auto 自动判断。",
         "advanced.sample": "采样间隔（秒）",
         "advanced.threshold": "相似度阈值",
         "advanced.threshold_help": "PPT 录屏通常建议从 0.98 开始。",
@@ -106,29 +126,37 @@ TEXT = {
         "run.stage.done": "处理完成",
         "run.done": "完成，提取到 {count} 页，执行设备: {device}",
         "results.section": "5. 结果预览",
-        "results.empty": "执行抽取后，这里会展示 PDF 下载、页面预览和缩略图列表。",
+        "results.empty": "执行抽取后，这里会展示 PDF 下载和缩略图列表。",
         "results.download": "下载 PDF",
         "results.no_images": "没有生成可展示的页面图片。",
         "results.delete": "删除此页",
         "results.restore": "恢复此页",
+        "results.delete_short": "[删除]",
+        "results.restore_short": "[恢复]",
         "results.dir": "当前结果目录",
     },
     "en": {
         "app.title": "Screen To Slides",
         "app.subtitle": "Upload a meeting recording, select the slide area, then extract and export a PDF.",
-        "lang.label": "Language",
+        "lang.label": "Language Setting / 语言选择",
         "lang.zh": "中文",
         "lang.en": "English",
-        "source.section": "1. Upload Video",
+        "app.footer_meta": "Version {version} · GitHub: {url}",
+        "app.footer_license": "License: PolyForm Noncommercial 1.0.0; contact the author for commercial licensing.",
+        "source.section": "1. Video Selection",
         "source.label": "Choose video source",
-        "source.example": "Choose local video",
-        "source.upload": "Upload new video",
+        "source.local": "Local video",
+        "source.upload": "Server upload",
+        "source.hybrid": "Hybrid mode",
         "source.uploader": "Upload video file",
         "source.dir": "Scan directory or video file path",
         "source.file": "Choose video file",
+        "source.file_placeholder": "Select a video file",
         "source.missing": "Video does not exist: {path}",
         "source.no_files": "No supported video files were found in this directory.",
         "source.empty": "Upload a video file or choose one from a local directory.",
+        "source.mode_caption": "Current launch mode: {mode}",
+        "source.pending": "No video selected yet",
         "overview.section": "2. Video Overview",
         "overview.duration": "Duration",
         "overview.path": "Current video",
@@ -139,6 +167,7 @@ TEXT = {
         "preview.invalid": "Invalid time format. Use `HH:MM:SS` or total seconds.",
         "selector.section": "3. Select Region",
         "selector.caption": "Draw a rectangle on the image to choose the slide area included in the PDF.",
+        "selector.empty": "The selectable preview appears here after a video is selected or uploaded.",
         "roi.left": "Left",
         "roi.top": "Top",
         "roi.width": "Width",
@@ -156,7 +185,7 @@ TEXT = {
         "advanced.mode": "Similarity algorithm",
         "advanced.mode_help": "`ssim` is more stable; `histogram` is lighter; `ahash` is faster but rougher.",
         "advanced.device": "Execution device",
-        "advanced.device_help": "`auto` prefers CUDA and falls back to CPU when GPU is unavailable.",
+        "advanced.device_help": "CPU is the default. Switch to GPU enhancement or auto only when you want acceleration.",
         "advanced.sample": "Sampling interval (seconds)",
         "advanced.threshold": "Similarity threshold",
         "advanced.threshold_help": "For slide recordings, 0.98 is a good starting point.",
@@ -175,11 +204,13 @@ TEXT = {
         "run.stage.done": "Completed",
         "run.done": "Done. Extracted {count} slides on {device}.",
         "results.section": "5. Results",
-        "results.empty": "After extraction, this area shows PDF download, page preview, and thumbnails.",
+        "results.empty": "After extraction, this area shows the PDF download and the thumbnail list.",
         "results.download": "Download PDF",
         "results.no_images": "No slide images were generated.",
         "results.delete": "Remove this slide",
         "results.restore": "Restore this slide",
+        "results.delete_short": "[Delete]",
+        "results.restore_short": "[Restore]",
         "results.dir": "Output directory",
     },
 }
@@ -202,11 +233,23 @@ def _apply_theme() -> None:
         .block-container {
             padding-top: 1.2rem;
         }
-        .roi-input-compact div[data-testid="stNumberInput"] {
+        div[data-testid="stNumberInput"] {
             margin-bottom: -0.35rem;
         }
-        .roi-input-compact div[data-testid="stButton"] {
+        div[data-testid="stButton"] {
             margin-bottom: -0.35rem;
+        }
+        button[kind="tertiary"] {
+            padding: 0;
+            min-height: auto;
+            border: 0;
+            background: transparent;
+            color: #6b7280;
+            font-size: 0.8rem;
+            line-height: 1.1;
+        }
+        button[kind="tertiary"]:hover {
+            color: #111827;
         }
         </style>
         """,
@@ -216,9 +259,16 @@ def _apply_theme() -> None:
 
 st.set_page_config(
     page_title="Screen To Slides",
-    page_icon="pages",
+    page_icon=APP_ICON,
     layout="wide",
 )
+
+
+def _get_app_source_mode() -> str:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--app-mode", choices=sorted(APP_SOURCE_MODES), default="local")
+    args, _ = parser.parse_known_args(sys.argv[1:])
+    return args.app_mode
 
 
 def main() -> None:
@@ -228,16 +278,26 @@ def main() -> None:
     st.session_state.setdefault("roi_selector_version", 0)
 
     current_language = st.session_state.get("language", "zh")
-    title_col, lang_col = st.columns([5.5, 1.2], gap="small")
+    title_col, lang_col = st.columns([5.5, 1.4], gap="small")
     with title_col:
-        st.title(_t(current_language, "app.title"))
+        if APP_ICON_B64:
+            st.markdown(
+                f"""
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                  <img src="data:image/png;base64,{APP_ICON_B64}" alt="logo" style="height:2.45rem; width:auto; display:block;" />
+                  <h1 style="margin:0; font-size:2.45rem; line-height:1.1;">{_t(current_language, "app.title")}</h1>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.title(_t(current_language, "app.title"))
     with lang_col:
         language = st.selectbox(
             _t(current_language, "lang.label"),
             options=["zh", "en"],
             index=0 if current_language == "zh" else 1,
             format_func=lambda value: TEXT[current_language][f"lang.{value}"],
-            label_visibility="collapsed",
         )
     st.session_state["language"] = language
 
@@ -246,45 +306,56 @@ def main() -> None:
 
     st.caption(_t(language, "app.subtitle"))
 
-    video_path = _render_source_panel(language)
-    if not video_path:
-        st.info(_t(language, "source.empty"))
-        return
+    app_mode = _get_app_source_mode()
+    video_path = _render_source_panel(language, app_mode)
+    metadata = None
+    current_roi = None
+    preview_image = None
+    selector_image = None
 
-    metadata = get_video_metadata(video_path)
-    current_roi = ensure_roi(st.session_state.get("roi"), metadata)
-    st.session_state["roi"] = current_roi
-
-    _render_video_summary(language, video_path, metadata)
-    preview_seconds = _render_preview_locator(language, metadata)
-    preview_image = load_preview_frame(video_path, float(preview_seconds))
+    if video_path:
+        metadata = get_video_metadata(video_path)
+        current_roi = ensure_roi(st.session_state.get("roi"), metadata)
+        st.session_state["roi"] = current_roi
+        _render_video_summary(language, video_path, metadata)
+        preview_seconds = _render_preview_locator(language, metadata)
+        preview_image = load_preview_frame(video_path, float(preview_seconds))
+        selector_image, scale = resize_for_selector(preview_image)
+    else:
+        _render_video_summary_empty(language)
+        _render_preview_locator_empty(language)
 
     selection_col, settings_col = st.columns([1.5, 1.0], gap="large")
     with selection_col:
         st.subheader(_t(language, "selector.section"))
         st.caption(_t(language, "selector.caption"))
-        selector_image, scale = resize_for_selector(preview_image)
-        selector_roi = _scale_roi_for_preview(current_roi, scale)
-        selected_preview_roi = _render_roi_selector(selector_image, selector_roi)
-        if selected_preview_roi is not None:
-            st.session_state["roi"] = _scale_roi_to_original(selected_preview_roi, scale, metadata)
-            st.session_state["roi_selector_version"] += 1
-            st.rerun()
-        _render_roi_inputs(language, current_roi, metadata)
-        current_roi = ensure_roi(st.session_state["roi"], metadata)
-        st.session_state["roi"] = current_roi
+        if video_path and metadata is not None and current_roi is not None and selector_image is not None:
+            selector_roi = _scale_roi_for_preview(current_roi, scale)
+            selected_preview_roi = _render_roi_selector(selector_image, selector_roi)
+            if selected_preview_roi is not None:
+                st.session_state["roi"] = _scale_roi_to_original(selected_preview_roi, scale, metadata)
+                st.session_state["roi_selector_version"] += 1
+                st.rerun()
+            _render_roi_inputs(language, current_roi, metadata)
+            current_roi = ensure_roi(st.session_state["roi"], metadata)
+            st.session_state["roi"] = current_roi
+        else:
+            _render_empty_roi_selector(language)
+            _render_empty_roi_inputs(language)
 
     with settings_col:
-        settings_offset_px = max(48, min(180, int(selector_image.shape[0] * 0.18)))
+        settings_offset_px = 72 if selector_image is None else max(48, min(180, int(selector_image.shape[0] * 0.18)))
         st.markdown(f"<div style='height:{settings_offset_px}px'></div>", unsafe_allow_html=True)
         st.subheader(_t(language, "summary.section"))
         is_upload = st.session_state.get("video_source_type") == "upload"
         config, output_root = _render_config_panel(language, video_path, is_upload)
         backend = get_execution_backend(config.execution_device)
-        st.caption(
-            f"{_t(language, 'summary.roi')}: "
-            f"{_t(language, 'summary.roi_value', width=current_roi.width, height=current_roi.height)}"
+        roi_text = (
+            _t(language, "summary.roi_value", width=current_roi.width, height=current_roi.height)
+            if current_roi is not None
+            else "-"
         )
+        st.caption(f"{_t(language, 'summary.roi')}: {roi_text}")
         device_note = (
             backend.display_name
             if backend.actual == "cuda"
@@ -292,7 +363,13 @@ def main() -> None:
         )
         st.caption(f"{_t(language, 'summary.device')}: {device_note}")
         progress_area = st.empty()
-        if st.button(_t(language, "run.button"), type="primary", width="stretch"):
+        run_clicked = st.button(
+            _t(language, "run.button"),
+            type="primary",
+            width="stretch",
+            disabled=video_path is None,
+        )
+        if run_clicked and video_path and current_roi is not None:
             st.session_state["excluded_slides"] = set()
             with progress_area.container():
                 progress_bar = st.progress(0)
@@ -337,22 +414,28 @@ def main() -> None:
             )
 
     _render_result_section(language)
+    _render_footer(language)
 
 
-def _render_source_panel(language: str) -> Path | None:
+def _render_source_panel(language: str, app_mode: str) -> Path | None:
     st.subheader(_t(language, "source.section"))
-    source_mode = st.radio(
-        _t(language, "source.label"),
-        options=["example", "upload"],
-        horizontal=True,
-        format_func=lambda value: _t(language, f"source.{value}"),
-    )
+    st.caption(_t(language, "source.mode_caption", mode=_t(language, f"source.{app_mode}")))
 
-    if source_mode == "example":
+    if app_mode == "hybrid":
+        source_mode = st.radio(
+            _t(language, "source.label"),
+            options=["local", "upload"],
+            horizontal=True,
+            format_func=lambda value: _t(language, f"source.{value}"),
+        )
+    else:
+        source_mode = app_mode
+
+    if source_mode == "local":
         st.session_state["video_source_type"] = "local"
         source_default = st.session_state.get(
             "local_video_source",
-            str(EXAMPLE_VIDEO if EXAMPLE_VIDEO.exists() else ROOT),
+            str(ROOT),
         )
         source_value = st.text_input(_t(language, "source.dir"), value=source_default).strip()
         st.session_state["local_video_source"] = source_value
@@ -374,20 +457,33 @@ def _render_source_panel(language: str) -> Path | None:
             st.info(_t(language, "source.no_files"))
             return None
 
-        selected_index = 0
+        selected_index = None
         if selected_from_path is not None:
             try:
                 selected_index = local_files.index(selected_from_path)
             except ValueError:
-                selected_index = 0
+                selected_index = None
+        else:
+            selected_from_state = st.session_state.get("local_selected_video")
+            if selected_from_state:
+                selected_path = Path(selected_from_state)
+                if selected_path in local_files:
+                    selected_index = local_files.index(selected_path)
 
         selected_file = st.selectbox(
             _t(language, "source.file"),
             options=local_files,
             index=selected_index,
+            placeholder=_t(language, "source.file_placeholder"),
             format_func=lambda path: str(path.relative_to(local_dir)) if local_dir in path.parents or path == local_dir else str(path),
         )
+        if selected_file is None:
+            st.session_state.pop("video_path", None)
+            st.session_state["local_selected_video"] = ""
+            return None
+
         st.session_state["video_path"] = str(selected_file)
+        st.session_state["local_selected_video"] = str(selected_file)
         return selected_file
 
     st.session_state["video_source_type"] = "upload"
@@ -408,6 +504,12 @@ def _render_source_panel(language: str) -> Path | None:
     return upload_path
 
 
+def _render_footer(language: str) -> None:
+    st.markdown("---")
+    st.caption(_t(language, "app.footer_meta", version=__version__, url=GITHUB_URL))
+    st.caption(_t(language, "app.footer_license"))
+
+
 def _render_video_summary(language: str, video_path: Path, metadata) -> None:
     st.subheader(_t(language, "overview.section"))
     cols = st.columns([1.1, 2.9], gap="large")
@@ -423,6 +525,15 @@ def _render_video_summary(language: str, video_path: Path, metadata) -> None:
                 fps=f"{metadata.fps:.2f}",
             )
         )
+
+
+def _render_video_summary_empty(language: str) -> None:
+    st.subheader(_t(language, "overview.section"))
+    cols = st.columns([1.1, 2.9], gap="large")
+    cols[0].metric(_t(language, "overview.duration"), "--:--:--")
+    with cols[1]:
+        st.caption(f"{_t(language, 'overview.path')}: `{_t(language, 'source.pending')}`")
+        st.caption(_t(language, "overview.meta", resolution="-- x --", fps="--"))
 
 
 def _list_local_videos(directory: Path) -> list[Path]:
@@ -470,6 +581,22 @@ def _render_preview_locator(language: str, metadata) -> int:
             st.rerun()
 
     return int(st.session_state["preview_seconds"])
+
+
+def _render_preview_locator_empty(language: str) -> None:
+    st.select_slider(
+        _t(language, "preview.label"),
+        options=[0, 1],
+        value=0,
+        format_func=_format_seconds,
+        help=_t(language, "preview.help"),
+        disabled=True,
+    )
+    st.text_input(
+        _t(language, "preview.input"),
+        value="00:00:00",
+        disabled=True,
+    )
 
 
 def _render_roi_selector(image_rgb: np.ndarray, roi: Roi) -> Roi | None:
@@ -559,8 +686,28 @@ def _render_roi_selector(image_rgb: np.ndarray, roi: Roi) -> Roi | None:
     return None
 
 
+def _render_empty_roi_selector(language: str) -> None:
+    st.markdown(
+        f"""
+        <div style="
+            height: 360px;
+            border: 1px dashed #d1d5db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 0.95rem;
+            background: #fafafa;
+        ">
+            {_t(language, "selector.empty")}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _render_roi_inputs(language: str, current_roi: Roi, metadata) -> None:
-    st.markdown("<div class='roi-input-compact'>", unsafe_allow_html=True)
     label_cols = st.columns(5, gap="small")
     labels = [
         _t(language, "roi.left"),
@@ -611,10 +758,43 @@ def _render_roi_inputs(language: str, current_roi: Roi, metadata) -> None:
         st.session_state["roi"] = Roi(x=0, y=0, width=metadata.width, height=metadata.height)
     else:
         st.session_state["roi"] = Roi(**roi_values).clipped(metadata.width, metadata.height)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
-def _render_config_panel(language: str, video_path: Path, is_upload: bool) -> tuple[ExtractConfig, Path]:
+def _render_empty_roi_inputs(language: str) -> None:
+    label_cols = st.columns(5, gap="small")
+    labels = [
+        _t(language, "roi.left"),
+        _t(language, "roi.top"),
+        _t(language, "roi.width"),
+        _t(language, "roi.height"),
+    ]
+    for col, label in zip(label_cols[:4], labels):
+        col.markdown(
+            f"<div style='text-align:center; color:#6b7280; font-size:0.875rem;'>{label}</div>",
+            unsafe_allow_html=True,
+        )
+    label_cols[4].caption("")
+
+    input_cols = st.columns(5, gap="small", vertical_alignment="bottom")
+    for idx, key in enumerate(["x", "y", "width", "height"]):
+        input_cols[idx].number_input(
+            key,
+            min_value=0,
+            value=0,
+            step=1,
+            label_visibility="collapsed",
+            disabled=True,
+            key=f"empty_{key}_input",
+        )
+    input_cols[4].button(
+        _t(language, "roi.reset"),
+        width="stretch",
+        disabled=True,
+        key="empty_roi_reset",
+    )
+
+
+def _render_config_panel(language: str, video_path: Path | None, is_upload: bool) -> tuple[ExtractConfig, Path]:
     max_slides = st.number_input(_t(language, "summary.max_slides"), min_value=1, max_value=1000, value=200, step=1)
     with st.expander(_t(language, "summary.advanced"), expanded=False):
         output_dir_value = ""
@@ -633,6 +813,7 @@ def _render_config_panel(language: str, video_path: Path, is_upload: bool) -> tu
         execution_device = st.selectbox(
             _t(language, "advanced.device"),
             options=["auto", "cpu", "gpu"],
+            index=1,
             help=_t(language, "advanced.device_help"),
         )
         sample_every_seconds = st.slider(
@@ -658,7 +839,7 @@ def _render_config_panel(language: str, video_path: Path, is_upload: bool) -> tu
             step=0.5,
             help=_t(language, "advanced.stable_help"),
         )
-    output_root = Path(output_dir_value).expanduser() if output_dir_value else video_path.parent
+    output_root = Path(output_dir_value).expanduser() if output_dir_value else (video_path.parent if video_path else OUTPUTS_DIR)
     return (
         ExtractConfig(
             mode=mode,
@@ -747,46 +928,41 @@ def _render_result_section(language: str) -> None:
 
     st.caption(f"{_t(language, 'results.dir')}: `{result_dir.name}`")
 
-    # Thumbnail gallery: click st.button to delete/restore, visual overlay via HTML
-    # Inject CSS to make delete/restore buttons borderless and compact
-    st.markdown("""<style>
-    [data-testid="stBaseButton-delete_"] button,
-    [data-testid="stBaseButton-restore_"] button,
-    button[kind="header"] { display: none; }
-    .thumb-action button { border: none !important; box-shadow: none !important;
-        background: transparent !important; padding: 0.1rem 0.4rem !important;
-        font-size: 0.8rem !important; color: #888 !important; min-height: 0 !important; }
-    .thumb-action button:hover { color: #333 !important; background: #f0f0f0 !important; }
-    </style>""", unsafe_allow_html=True)
-
+    # Thumbnail gallery: small top-left toggle text above each image
     gallery_cols = st.columns(3)
     for index, slide_path in enumerate(slide_paths):
         column = gallery_cols[index % len(gallery_cols)]
         with column:
+            _deleted = index in excluded
+            _toggle_label = _t(language, "results.restore_short") if _deleted else _t(language, "results.delete_short")
+            _toggle_help = _t(language, "results.restore") if _deleted else _t(language, "results.delete")
+            if st.button(
+                _toggle_label,
+                key=f"toggle_slide_{index}",
+                type="tertiary",
+                help=_toggle_help,
+                width="content",
+            ):
+                if _deleted:
+                    excluded.discard(index)
+                else:
+                    excluded.add(index)
+                st.rerun()
             with open(slide_path, "rb") as _imgf:
                 _b64 = base64.b64encode(_imgf.read()).decode()
-            _deleted = index in excluded
-            if _deleted:
-                _img_style = "filter:grayscale(0.8) opacity(0.45);"
-                _overlay = '<div style="position:absolute;inset:0;background:rgba(128,128,128,0.35);pointer-events:none;"></div>'
-                _badge = '<div style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.5);color:#fff;border-radius:4px;padding:1px 6px;font-size:0.75rem;pointer-events:none;">&#x21A9; ' + _t(language, "results.restore") + '</div>'
-            else:
-                _img_style = ""
-                _overlay = ""
-                _badge = ""
-            st.markdown(f"""<div style="position:relative;display:inline-block;width:100%;border-radius:6px;overflow:hidden;">
-              <img src="data:image/jpeg;base64,{_b64}" style="width:100%;display:block;{_img_style}"/>
-              {_overlay}
-              {_badge}
-            </div>""", unsafe_allow_html=True)
-            if _deleted:
-                if st.button("↩ " + _t(language, "results.restore"), key=f"restore_{index}"):
-                    excluded.discard(index)
-                    st.rerun()
-            else:
-                if st.button("🗑 " + _t(language, "results.delete"), key=f"delete_{index}"):
-                    excluded.add(index)
-                    st.rerun()
+            _img_style = "filter:grayscale(0.8) opacity(0.45);" if _deleted else ""
+            _overlay_html = (
+                '<div style="position:absolute;inset:0;background:rgba(128,128,128,0.35);pointer-events:none;"></div>'
+                if _deleted
+                else ""
+            )
+            _thumbnail_html = (
+                '<div style="position:relative;display:inline-block;width:100%;border-radius:6px;overflow:hidden;">'
+                f'<img src="data:image/jpeg;base64,{_b64}" style="width:100%;display:block;{_img_style}"/>'
+                f"{_overlay_html}"
+                "</div>"
+            )
+            st.markdown(_thumbnail_html, unsafe_allow_html=True)
 
 
 def _to_pil_image(image_rgb: np.ndarray):
