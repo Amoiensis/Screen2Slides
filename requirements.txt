@@ -1,0 +1,8 @@
+streamlit>=1.43
+opencv-python
+scikit-image
+numpy
+Pillow
+plotly
+pandas
+
