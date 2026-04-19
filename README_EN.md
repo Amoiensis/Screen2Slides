@@ -115,24 +115,32 @@ For personal use, local mode is the recommended default:
 bash run_app_local.sh
 ```
 
-Other modes:
+Windows equivalent:
 
-```bash
-bash run_app_upload.sh
-bash run_app_hybrid.sh
+```bat
+run_app_local.bat
 ```
 
-Mode summary:
+Script summary:
 
-- `run_app_local.sh`: local-only mode, best for personal use
-- `run_app_upload.sh`: upload-only mode
-- `run_app_hybrid.sh`: lets the user switch between local selection and upload
-- `run_app.sh`: same as `run_app_local.sh`
+| Scenario | macOS / Linux | Windows | Description |
+| --- | --- | --- | --- |
+| Default local mode | `bash run_app_local.sh` | `run_app_local.bat` | Local-only mode, best for personal use |
+| Upload-only mode | `bash run_app_upload.sh` | `run_app_upload.bat` | Shows the upload entry only |
+| Hybrid mode | `bash run_app_hybrid.sh` | `run_app_hybrid.bat` | Lets the user switch between local selection and upload |
+| Default alias | `bash run_app.sh` | `run_app.bat` | Same as local mode |
 
 To override the Python executable:
 
 ```bash
 PYTHON_BIN=python bash run_app_local.sh
+```
+
+On Windows, you can set the environment variable first, for example:
+
+```bat
+set PYTHON_BIN=python
+run_app_local.bat
 ```
 
 ## Local CLI
@@ -143,6 +151,12 @@ Minimal usage:
 
 ```bash
 bash run_cli.sh /path/to/video.mp4
+```
+
+Windows equivalent:
+
+```bat
+run_cli.bat C:\path\to\video.mp4
 ```
 
 Equivalent form:

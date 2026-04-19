@@ -115,24 +115,32 @@ pip install -r requirements.txt
 bash run_app_local.sh
 ```
 
-也可以使用:
+Windows 对应写法:
 
-```bash
-bash run_app_upload.sh
-bash run_app_hybrid.sh
+```bat
+run_app_local.bat
 ```
 
-说明:
+脚本说明:
 
-- `run_app_local.sh`: 本地模式，只显示本地视频选择，适合个人使用
-- `run_app_upload.sh`: 服务器上传模式，只显示上传入口
-- `run_app_hybrid.sh`: 兼容模式，可在本地视频和服务器上传之间切换
-- `run_app.sh`: 等价于 `run_app_local.sh`
+| 场景 | macOS / Linux | Windows | 说明 |
+| --- | --- | --- | --- |
+| 默认本地模式 | `bash run_app_local.sh` | `run_app_local.bat` | 本地模式，只显示本地视频选择，适合个人使用 |
+| 服务器上传模式 | `bash run_app_upload.sh` | `run_app_upload.bat` | 只显示上传入口 |
+| 兼容模式 | `bash run_app_hybrid.sh` | `run_app_hybrid.bat` | 可在本地视频和服务器上传之间切换 |
+| 默认别名 | `bash run_app.sh` | `run_app.bat` | 等价于本地模式 |
 
 如果需要自定义 Python，可传入:
 
 ```bash
 PYTHON_BIN=python bash run_app_local.sh
+```
+
+Windows 可直接先设置环境变量再运行，例如:
+
+```bat
+set PYTHON_BIN=python
+run_app_local.bat
 ```
 
 ## 本地 CLI
@@ -143,6 +151,12 @@ PYTHON_BIN=python bash run_app_local.sh
 
 ```bash
 bash run_cli.sh /path/to/video.mp4
+```
+
+Windows 对应写法:
+
+```bat
+run_cli.bat C:\path\to\video.mp4
 ```
 
 等价写法:
