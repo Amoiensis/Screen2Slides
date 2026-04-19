@@ -1,9 +1,9 @@
-<table>
+<table border="0" cellspacing="0" cellpadding="0">
   <tr>
-    <td width="72" valign="middle">
+    <td width="72" valign="middle" style="border:none; padding:0 12px 0 0;">
       <img src="assets/amoiensis_samll.png" alt="Screen2Slides Logo" width="56">
     </td>
-    <td valign="middle">
+    <td valign="middle" style="border:none; padding:0;">
       <h1>Screen2Slides</h1>
     </td>
   </tr>
